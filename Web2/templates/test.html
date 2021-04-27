@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <title>経過時間</title>
+    <style>
+        body {
+            background-color: #004666;
+        }
+        .container {
+            /*margin-top: 100px;*/
+            text-align: center;
+        }
+        #timerLabel {
+            color: white;
+            font-size: 20em;
+            line-height: 0.1em;
+        }
+        .myButton {
+            width: 180px;
+            height: 50px;
+            border: none;
+            border-radius: 6px;
+            background-color: white;
+            font-size: 16px;
+        }
+        .title, .myButton {
+            color: midnightblue;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <p id="timerLabel">00:00</p>
+    </div>
+    <script>
+        var status = 0; // 0:停止中 1:動作中
+        var time = 0;
+        var startBtn = document.getElementById("startBtn");
+        var timerLabel = document.getElementById('timerLabel');
+        var num = getQueryParam("my_name").value;
+        var s_url = 'http://sens-a.local';
+        
+        timer();
+        function timer(){
+            setTimeout(function() {
+                time++;
+                
+                // 分・秒・ミリ秒を計算
+                var min = Math.floor(time/100/60);
+                var sec = Math.floor(time/100);
+                var mSec = time % 100;
+
+                if (min < 10) min = "0" + min;
+                if (sec >= 60) sec = sec % 60;
+                if (sec < 10) sec = "0" + sec;
+
+                // タイマーラベルを更新
+                timerLabel.innerHTML = min + ":" + sec ;
+                if (sec % 10 == 0){
+                    //var res=getTextData(s_url).split(",");
+                }
+                if (min == 1) window.location = "http://127.0.0.1:5000/request_post";
+                    // 再びtimer()を呼び出す
+                timer();
+            }, 10);
+        }
+        function getQueryParam(key) {
+            // 1.URLから (指定したパラメータ名~&|$|#) で終わる箇所を抜き出し
+            const value = window.location.href.match(new RegExp("[?&]" + key + "=(.*?)(&|$|#)"));
+            // 2.パラメータ名に一致する値が存在しない場合は空返却
+            if (value == null) return '';
+            // 3.パラメータ名に一致する値が存在した場合はURLデコードして返却
+            return decodeURIComponent(value[1]);
+        }
+
+    </script>
+</body>

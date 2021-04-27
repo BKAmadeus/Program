@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<title>page02</title>
+<body>
+
+<input id="test_bbb">
+
+<script>
+var q = location.search.substring(1);
+if(q) {
+var a = q.split("=")[1];
+document.getElementById("test_bbb").value = a;
+}
+</script>
+
+</body>

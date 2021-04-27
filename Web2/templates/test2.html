@@ -1,0 +1,38 @@
+<!DOCTYPE html><html>
+<head><meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="data:,">
+    <style>body { text-align: center; font-family: "Trebuchet MS", Arial; margin-left:auto; margin-right:auto;}
+        .slider { width: 300px; }
+        #servoPosR{color: red;}
+        #servoPosG{color: green;}
+        #servoPosB{color: blue;}
+    </style>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+</head>
+    <body>
+        <h1>ESP32 with RGB LED</h1>
+        <p>Brightness of R: <span id="servoPosR"></span></p>
+        <input type="range" min="0" max="255" class="slider" id="servoSliderR" onchange="servo(this.value,'R')" value="5"/>
+        <p>Brightness of G: <span id="servoPosG"></span></p>
+        <input type="range" min="0" max="255" class="slider" id="servoSliderG" onchange="servo(this.value,'G')" value="5"/>
+        <p>Brightness of B: <span id="servoPosB"></span></p>
+        <input type="range" min="0" max="255" class="slider" id="servoSliderB" onchange="servo(this.value,'B')" value="5"/>
+        <script>
+            var sliderR = document.getElementById("servoSliderR");
+            var servoPR = document.getElementById("servoPosR"); servoPR.innerHTML = sliderR.value;
+            sliderR.oninput = function() { sliderR.value = this.value; servoPR.innerHTML = this.value; }
+
+            var sliderG = document.getElementById("servoSliderG");
+            var servoPG = document.getElementById("servoPosG"); servoPG.innerHTML = sliderG.value;
+            sliderG.oninput = function() { sliderG.value = this.value; servoPG.innerHTML = this.value; }
+
+            var sliderB = document.getElementById("servoSliderB");
+            var servoPB = document.getElementById("servoPosB"); servoPB.innerHTML = sliderB.value;
+            sliderB.oninput = function() { sliderB.value = this.value; servoPB.innerHTML = this.value; }
+
+            $.ajaxSetup({timeout:1000}); function servo(pos,color) { 
+            $.get("/?value" + color + "=" + pos + "&"); {Connection: close};}
+        </script>
+    </body>
+</html>
