@@ -1,0 +1,19 @@
+Google アカウントメールアドレス
+mdsensornetwork@gmail.com
+パスワード
+WirelessSensorNetworkMD20003
+
+
+Google APIs プロジェクト名
+TCC-HIT-WSN
+
+OAuth 2.0 クライアント(URL参照※JSONファイルダウンロードなど）
+
+ID
+801654705486-bfj6v8q33rjtbkqf76u81iuvkspusbbf.apps.googleusercontent.com
+シークレット
+E1_-9yiWBhTHYIJ_254PsaJ4
+
+https://console.developers.google.com/apis/credentials?clientUpdateTime=2020-05-18T05:12:38.263418Z&project=tcc-hit-wsn
+
+pythonですが参考にしたサイトや必要なサイトはGoogle アカウントのお気に入りに入れてますので見れると思います。
