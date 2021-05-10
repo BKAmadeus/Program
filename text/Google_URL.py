@@ -1,68 +1,85 @@
-import json
-from urllib import parse
+#Googleの検索結果の上位サイトのtitle,h1,h2,h3,,記事文字数を取得し、スプレットシートに出力
+import sys
 import requests
-from bs4 import BeautifulSoup
-
+import bs4
+import urllib.parse
 
 class Google:
     def __init__(self):
-        self.GOOGLE_SEARCH_URL = 'https://www.google.co.jp/search'
-        self.session = requests.session()
-        self.session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:57.0) Gecko/20100101 Firefox/57.0'})
+        self.output = []
+        self.columns = ['検索順位','url','titleタグ','h1タグ','h2タグ','h3タグ','記事文字数']
 
-    def Search(self, keyword, type='text', maximum=1000):
-        '''Google検索'''
-        print('Google', type.capitalize(), 'Search :', keyword)
-        result, total = [], 0
-        query = self.query_gen(keyword, type)
-        while True:
-            # 検索
-            html = self.session.get(next(query)).text
-            links = self.get_links(html, type)
 
-            # 検索結果の追加
-            if not len(links):
-                print('-> No more links')
-                break
-            elif len(links) > maximum - total:
-                result += links[:maximum - total]
-                break
-            else:
-                result += links
-                total += len(links)
+    #置換用
+    def replace_n(self,str_data):
+        return str_data.replace('¥n','').replace('¥r','')
 
-        print('-> Finally got', str(len(result)), 'links')
-        return result
+    #文字列用
+    def concat_list(self,list_data):
+        str_data = ''
+        for j in range(len(list_data)):
+            str_data = str_data + self.replace_n(list_data[j].getText()).strip() + '¥n'
+        return str_data.rstrip("¥n")
 
-    def query_gen(self, keyword, type):
-        '''検索クエリジェネレータ'''
-        page = 0
-        while True:
-            if type == 'text':
-                params = parse.urlencode({
-                    'q': keyword,
-                    'num': '100',
-                    'filter': '0',
-                    'start': str(page * 100)})
-            elif type == 'image':
-                params = parse.urlencode({
-                    'q': keyword,
-                    'tbm': 'isch',
-                    'filter': '0',
-                    'ijn': str(page)})
+    def Search(self,list_keyword,type='all',maximum=100):
+        if type == 'all':
+            self.output.append(self.columns)
+        
+        search_url = 'https://www.google.co.jp/search?hl=ja&num={}&q={}'.format(maximum,' '.join(list_keyword))
+        res_google = requests.get(search_url)
+        res_google.raise_for_status()
 
-            yield self.GOOGLE_SEARCH_URL + '?' + params
-            page += 1
+        #BeautifulSoupで掲載サイトのURLを取得
+        bs4_google = bs4.BeautifulSoup(res_google.text, 'html.parser')
+        #print(bs4_google.prettify())
+        link_google = bs4_google.select('.kCrYT > a')
 
-    def get_links(self, html, type):
-        '''リンク取得'''
-        soup = BeautifulSoup(html, 'lxml')
-        if type == 'text':
-            elements = soup.select('.rc > .r > a')
-            links = [e['href'] for e in elements]
-        elif type == 'image':
-            elements = soup.select('.rg_meta.notranslate')
-            jsons = [json.loads(e.get_text()) for e in elements]
-            links = [js['ou'] for js in jsons]
-        return links
+        for i in range(len(link_google)):
+            #余計な文字の削除
+            sita_url = link_google[i].get('href').split('&sa=U&')[0].replace('/url?q=','')
+            if type == 'all':
+                #URLに日本語が含まれている場合、エンコードされているのでデコードする
+                sita_url = urllib.parse.unquote(urllib.parse.unquote(sita_url))
+
+            if 'https://' in sita_url or 'http://' in sita_url:
+                #サイトの内容を解析
+                try:
+                    res_sita = requests.get(sita_url)
+                    res_sita.encoding = 'utf-8'
+                except:
+                    continue
+                bs4_sita = bs4.BeautifulSoup(res_sita.text, 'html.parser')
+
+
+                #データを初期化
+                if type == 'all' or type == 'title':
+                    title_sita = ''
+                if type == 'all':
+                    h1_sita = ''
+                    h2_sita = ''
+                    h3_sita = ''
+                    mojisu_sita = 0
+
+                #データを所得
+                if type == 'all' or type == 'title':
+                    if bs4_sita.select('title'):
+                        title_sita = self.replace_n(bs4_sita.select('title')[0].getText())
+                if type == 'all':
+                    if bs4_sita.select('h1'):
+                        h1_sita = self.concat_list(bs4_sita.select('h1'))
+                    if bs4_sita.select('h2'):
+                        h2_sita = self.concat_list(bs4_sita.select('h2'))
+                    if bs4_sita.select('h3'):
+                        h3_sita = self.concat_list(bs4_sita.select('h3'))
+                    if bs4_sita.select('body'):
+                        mojisu_sita = len(bs4_sita.select('body')[0].getText())
+                
+                #データをリストに入れておく
+                if type == 'all':
+                    output_data_new = i+1, sita_url, title_sita, h1_sita, h2_sita, h3_sita, mojisu_sita
+                elif type == 'title':
+                    output_data_new = i+1, sita_url, title_sita
+                elif  type == 'url':
+                    output_data_new = sita_url
+                self.output.append(output_data_new)
+        return self.output
