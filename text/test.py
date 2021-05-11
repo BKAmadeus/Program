@@ -8,8 +8,10 @@ from TextExtraction import TextExtraction
 import pandas as pd
 
 google = Google()
+print("test")
 text = TextExtraction()
-urls = google.Search("ドラえもん",type = "text",maximum = 10)
+print("test")
+urls = google.Search("python qiita",type = "url",maximum = 1)
 print(urls)
 for url in urls:
     print(url)
