@@ -1,0 +1,18 @@
+.error{
+  color: red;
+  font-weight:bold;
+}
+.attention{
+  color: blue;
+  font-weight:bold;
+  background-color: rgb(200, 200, 200);
+}
+.chacklist{
+  color: blue;
+  font-weight:bold;
+  background-color: yellow;
+}
+.table{
+  table-layout:auto;
+  width:100%;
+}
