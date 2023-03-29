@@ -1,5 +1,34 @@
 var psql = require("./Postgre.js");
 
+const StructSELECTSQL = async (flg,table,column,structlist,SELECT="",max=0) => {
+    if(flg===0){
+        Struct = [];
+        for(let i=1;i<=max;i++){
+            var sql = "SELECT "
+            for await(var column2 of structlist){
+                sql = sql + `${column}[${i}].${column2},`
+            }
+            sql = sql.slice(0,sql.length-1) + ` FROM ${table}${SELECT} order by id;`
+            var row = await psql.PostgreSQLquery(sql);
+            Struct[i-1] = row
+        }
+    }
+    else if(flg===1){
+        var sql = "SELECT "
+        for await(var column2 of structlist){
+            sql = sql + `(${column}).${column2},`
+        }
+        sql = sql.slice(0,sql.length-1) + ` FROM ${table}${SELECT} order by id;`
+        var row = await psql.PostgreSQLquery(sql);
+        Struct = row;
+    }
+    return Struct
+}
+
+exports.StructSQL = async function(flg,table,column,structlist,SELECT="",array_length=null){
+    return await StructSELECTSQL(flg,table,column,structlist,SELECT,array_length);
+}
+
 
 exports.StructChack = async function(Data,select){
     var StructType = await psql.PostgreSQLquery("select t1.typname from pg_catalog.pg_type t1 left outer join pg_catalog.pg_namespace t2 on t1.typnamespace = t2.oid left outer join pg_catalog.pg_tables t3 on t1.typname = t3.tablename left outer join pg_catalog.pg_sequences t4 on t1.typname = t4.sequencename where t2.nspname = 'public' and ( t1.typcategory = 'C' or t1.typcategory = 'E' ) and t3.tablename is null and t4.sequencename is null order by t1.typname;");
@@ -14,42 +43,49 @@ exports.StructChack = async function(Data,select){
     for await(var table of select){
         data[table] = {}
         data[table].struct = {}
+        data[table].association = {}
         data[table].table = Data[table];
         data[table].max = []
         var Struct = {}
         for await(var key of Object.keys(Data[table][0])){
             var st_ch = await psql.PostgreSQLquery(`SELECT pg_typeof(${key}) FROM ${table} LIMIT 1;`)
+            var check = st_ch[0].pg_typeof
             st_ch = st_ch[0].pg_typeof.replace('[]','')
             if(StructType.includes(st_ch)){
-                data[table].struct[key] = ans[st_ch];
-                var array_length = await psql.PostgreSQLquery(`SELECT array_length(${key},1) FROM ${table} order by id;`);
-                array_length = array_length.map((val)=> val.array_length);
-                max = Math.max(...array_length);
-                data[table].max.push({name:key,max:max});
-                Struct[key] = [];
-                for(let i=1;i<=max;i++){
-                    var sql = "SELECT "
-                    for await(var key2 of ans[st_ch]){
-                        sql = sql + `${key}[${i}].${key2},`
-                    }
-                    sql = sql.slice(0,sql.length-1) + ` FROM ${table} order by id;`
-                    var row = await psql.PostgreSQLquery(sql);
-                    Struct[key][i-1] = row
-                }
                 Count = 0;
-                data[table].table = data[table].table.map((val)=>{
-                    if(val[key]){
-                        val[key] = [];
-                        for(var i=0;i<array_length[Count];i++){
-                            val[key][i] = Struct[key][i][Count];
+                if(check.indexOf('[]') === -1){
+                    data[table].association[key] = ans[st_ch];
+                    Struct[key] = await StructSELECTSQL(1,table,key,ans[st_ch]);
+                    data[table].table = data[table].table.map((val)=>{
+                        if(val[key]){
+                            val[key] = [];
+                            val[key] = Struct[key][Count];
                         }
-                    }
-                    else{
-                        val[key] = null;
-                    }
-                    Count++;
-                    return val
-                })
+                        else{
+                            val[key] = null;
+                        }
+                        Count++;
+                        return val
+                    })
+                }
+                else{
+                    data[table].struct[key] = ans[st_ch];
+                    var array_length = await psql.PostgreSQLquery(`SELECT array_length(${key},1) FROM ${table} order by id;`);
+                    var max = array_length.reduce((max,val)=> !val?max:(val.array_length>max?val.array_length:max),0);
+                    Struct[key] = await StructSELECTSQL(0,table,key,ans[st_ch],"",max);
+                    data[table].table = data[table].table.map((val,index)=>{
+                        if(val[key]){
+                            val[key] = [];
+                            for(var i=0; i<array_length[index].array_length;i++){
+                                val[key][i] = Struct[key][i][index];
+                            }
+                        }
+                        else{
+                            val[key] = null;
+                        }
+                        return val
+                    })
+                }
             }
         }
     }

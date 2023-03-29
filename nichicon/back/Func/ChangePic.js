@@ -47,7 +47,8 @@ exports.PicChange = async function(url,TubeColor=[0,0,0],StringColor=[200,200,20
         }
     }
     
-    ans.maxwidth = imagedata.height > imagedata.width? imagedata.height:imagedata.width;
+    ans.width = imagedata.width;
+    ans.height = imagedata.height;
     // 加工したデータをセット
     ctx.putImageData(imagedata, 0, 0);
     ans.data = await canvas_to_base64(canvas)

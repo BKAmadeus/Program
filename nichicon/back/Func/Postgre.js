@@ -1,5 +1,6 @@
 var { Client } = require('pg');
-const fs = require('fs')
+const fs = require('fs');
+var Struct = require("./StructChack.js");
 
 const UPDATE_PATH = './Update/Update.json'
 const ADD_PATH = './Add/Add.json'
@@ -19,7 +20,7 @@ let DeleteData = JSON.parse(DeletedataJSON)
 
 var client = new Client({
   user: 'postgres',
-  host: '10.5.1.35',
+  host: 'localhost',
   port: 5432,
   database: 'nichicon',
   password: 'NICHICON'
@@ -57,19 +58,56 @@ exports.DeleteDataRows = function(Data) {
 }
 
 exports.UpdateDataRows = async function(Data){
-  var beforesql = "select ";
-  var aftersql = "update " + Data.name + " set ";
+  var beforesql = "SELECT ";
+  var aftersql = "UPDATE " + Data.table_name + " SET ";
   var rows = {}
-  for (var key in Data.row){
-    beforesql = beforesql + key + ",";
-    aftersql = aftersql + key + " = '" + Data.row[key] + "',";
+  var struct = {};
+  var structlist = Object.keys(Data.struct);
+  var associationlist = Object.keys(Data.association);
+  for (var key in Data.data){
+    if(Data.data[key] && Data.data[key].length !== 0){
+      if(structlist.includes(key)){
+        for(var index in Data.data[key]){
+          var array_length = await psql.PostgreSQLquery(`SELECT array_length(${key},1) FROM ${table_name} WHERE id = ${Data.data.id} order by id;`);
+          var max = array_length[0].array_length;
+          struct[key] = await Struct.StructSQL(0,Data.table_name,key,structlist,` WHERE id = ${Data.data.id}`,max);
+          for(var key2 in Data.data[key][index]){
+            if(Data.data[key][index][key2]){
+              aftersql+=`${key}[${index+1}].${key2} = '${Data.data[key][index][key2]}',`;
+            }
+            else{
+              aftersql+=`${key}[${index}].${key2} = null,`;
+            }
+          }
+        }
+      }
+      else if(associationlist.includes(key)){
+        for(var key2 in Data.data[key]){
+          beforesql+=`(${key}).${key2} as ${key+"_"+key2},`;
+          aftersql +=`${key}.${key2} = '${Data.data[key][key2]}',`;
+        }
+      }
+      else{
+        beforesql+=`${key},`
+        aftersql +=`${key} = '${Data.data[key]}',`
+      }
+    }
+    else{
+      beforesql+=`${key},`
+      aftersql+=`${key} = null,`
+    }
   }
-  beforesql = beforesql.slice(0,beforesql.length -1) + " from " + Data.name + " where " + Data.name + ".id = " + Data.row.id
-  aftersql = aftersql.slice(0,aftersql.length -1) + " where " + Data.name + ".id = " + Data.row.id
-  rows["name"] = Data.name;
+  beforesql = `${beforesql.slice(0,beforesql.length -1)} from ${Data.table_name} where id = ${Data.data.id}`;
+  aftersql = `${aftersql.slice(0,aftersql.length -1)} where id = ${Data.data.id}`;
+  rows["table"] = Data.table_name;
   rows["before"] = await PostgreSQLquery(beforesql);
-  await PostgreSQLquery(aftersql);
-  rows["after"] = Data.row;
+  try{
+    await PostgreSQLquery(aftersql);
+  }catch(e){
+    console.log(e);
+    rows["error"] = true;
+  }
+  rows["after"] = Data.data;
   return rows
 }
 

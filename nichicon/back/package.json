@@ -1,0 +1,16 @@
+{
+  "name": "nichicon-back",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "canvas": "^2.10.2",
+    "date-utils": "^1.2.21",
+    "express": "^4.18.1",
+    "mssql": "^9.0.1",
+    "mysql": "^2.18.1",
+    "pg": "^8.7.3",
+    "python-shell": "^3.0.1",
+    "tedious": "^15.1.2"
+  }
+}
