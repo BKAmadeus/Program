@@ -5,6 +5,7 @@ import Chip from "@mui/material/Chip";
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 import FilledInput from '@mui/material/FilledInput';
+import '../style.css'
 
 export function MultipleSelectChip(MSC:any) {
 
@@ -18,7 +19,7 @@ export function MultipleSelectChip(MSC:any) {
     return (
         <FormControl variant="outlined">
             <InputLabel>{MSC.Label}</InputLabel>
-            <Select
+            <Select className='df'
                 multiple
                 value={MSC.Default === undefined? [] : MSC.Default}
                 sx={{ width: 1200 }}

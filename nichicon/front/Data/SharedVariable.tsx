@@ -1,5 +1,5 @@
 import React,{ createContext,useState } from "react"
-import * as func from "../Func/func";
+import * as func from "../Components/func";
 import { useNavigate } from "react-router-dom";
 type Props = {
     children?: React.ReactNode;
@@ -27,7 +27,6 @@ export const AuthOperationContext = createContext<OperationType>({
       .then((data:any) => {
           if(data.flg){
             setAuthUser(data);
-            console.log("確認",USER);
             navigate(-1);
           }
         });

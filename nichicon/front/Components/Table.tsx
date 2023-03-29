@@ -5,7 +5,7 @@ import type {TableType} from '../Data/Data';
 import {defaultValues} from '../Data/Data';
 import { useForm } from 'react-hook-form';
 import {FormDialog} from './SortDialog';
-import {MakeExcel} from './makeExcel'
+import {MakeExcel} from './makeExcel';
 
 //アイコン
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -16,7 +16,6 @@ import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import Collapse from '@mui/material/Collapse';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
-
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -32,6 +31,8 @@ import AccordionSummary from '@mui/material/AccordionSummary';
 import IconButton from '@mui/material/IconButton';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
+
+import {TableUpdate} from './TableUpdate';
 
 import React, { useEffect } from 'react';
 import '../style.css';
@@ -97,6 +98,7 @@ export function DataTable(props:Props) {
   //初期値決め等
   useEffect(()=>{
       setValue(`check`,[...Array(props.Tables[props.TableName].table.length)].map(()=>false));
+      setValue(`update`,[...Array(props.Tables[props.TableName].table.length)].map(()=>false));
       setValue(`table_index`,[...Array(props.Tables[props.TableName].table.length)].map((_,i)=>i));
       // eslint-disable-next-line react-hooks/exhaustive-deps
   },[])
@@ -131,6 +133,7 @@ export function DataTable(props:Props) {
               table_name={props.TableName}
               table={props.Tables[props.TableName].table}
               struct={props.Tables[props.TableName].struct}
+              association={props.Tables[props.TableName].association}
               max={props.Tables[props.TableName].max}
               table_index={TableIndex.filter((val:any)=>watch(`check.${val}`))}
             />
@@ -148,8 +151,9 @@ export function DataTable(props:Props) {
                 <TableCell key={"checkbox"}>
                   <Checkbox checked={watch(`all_check`)} onChange={(e)=>{TableIndex.map((val:any)=>setValue(`check.${val}`,e.target.checked));setValue(`all_check`,e.target.checked)}}/>
                 </TableCell>
+                <TableCell key={"update"}>アップデート</TableCell>
               {Object.keys(props.Tables[props.TableName].table[0]).map((val:any,index:any)=>{
-                if(!Object.keys(props.Tables[props.TableName].struct).includes(val)){
+                if(!Object.keys(props.Tables[props.TableName].struct).includes(val) && !Object.keys(props.Tables[props.TableName].association).includes(val)){
                   return (
                   <TableCell key={val}>
                     <div className='table_element'>
@@ -187,8 +191,11 @@ export function DataTable(props:Props) {
                             <TableCell key={"checkbox"}>
                               <Checkbox checked={watch(`check.${index}`)} {...register(`check.${index}`)}/>
                             </TableCell>
+                            <TableCell key={"update"}>
+                              <TableUpdate TableName={props.TableName} index={index} data={props.Tables[props.TableName]} watch={watch} setValue={setValue}/>
+                            </TableCell>
                             {Object.keys(val).map((item:any)=>{
-                              if(!Object.keys(props.Tables[props.TableName].struct).includes(item)){
+                              if(!Object.keys(props.Tables[props.TableName].struct).includes(item) && !Object.keys(props.Tables[props.TableName].association).includes(item)){
                                 return <TableCell key={item}>{val[item]}</TableCell>
                               }
                               return ""
@@ -202,7 +209,7 @@ export function DataTable(props:Props) {
                                     return (
                                       <Accordion key={index2}>
                                         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                                          <Typography variant="h6">{struct}の要素一覧</Typography>
+                                          <Typography variant="h6">{struct}の配列</Typography>
                                         </AccordionSummary>
                                         <Box>
                                           <Table>
@@ -233,6 +240,36 @@ export function DataTable(props:Props) {
                                   }
                                   return ""
                                 })}
+                                {Object.keys(props.Tables[props.TableName].association).map((association:any,index2:any)=>{
+                                  if(val[association]){
+                                    return (
+                                      <Accordion key={index2}>
+                                        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                                          <Typography variant="h6">{association}の要素</Typography>
+                                        </AccordionSummary>
+                                        <Box>
+                                          <Table>
+                                            <TableHead>
+                                              <TableRow>
+                                                {props.Tables[props.TableName].association[association].map((item:any,index3:any)=>{
+                                                  return <TableCell key={index3}>{item}</TableCell>
+                                                })}
+                                              </TableRow>
+                                            </TableHead>
+                                            <TableBody>
+                                                  <TableRow>
+                                                    {props.Tables[props.TableName].association[association].map((item:any,index3:any)=>{
+                                                      return <TableCell key={index3}>{val[association][item]}</TableCell>
+                                                    })}
+                                                  </TableRow>
+                                            </TableBody>
+                                          </Table>
+                                        </Box>
+                                      </Accordion>
+                                    )
+                                  }
+                                  return ""
+                                })}
                               </Collapse>
                             </TableCell>
                           </TableRow>
@@ -254,84 +291,3 @@ export function DataTable(props:Props) {
     </div>
   );
 }
-
-/*
-        
-    const handleDelete = (RowParam:any) => {
-      var change = props.Tables;
-      change[props.TableName] = props.Tables[props.TableName].filter((item:any) => item.id !== RowParam.id);
-      props.TablesState(change);
-      props.ChangeState({flg:4,name:props.TableName,row:RowParam});
-    };
-    
-    const handleUpdate = (RowParam:any) => {
-      console.log("Edit",RowParam);
-      props.ChangeState({flg:2,name:props.TableName,row:RowParam})
-    };
-    const  Columns = (Table:any,Process:any) => {
-      var ans:any = []
-      var count = 0;
-      for(var key in Table[0]){
-        var row:any = []
-        row['field'] = key;
-        if(props.TableColumns !== undefined){
-          row['headerName'] = props.TableColumns[count];
-        }
-        else {
-          row['headerName'] = key;
-        }
-        row['minWidth'] = props.width * 6;
-        if (Process === '2' && key !== 'id'){
-            row['editable'] = true;
-        }
-        else{
-          row['editable'] = false;
-        }
-        ans.push(row);
-        count=count+1;
-      }
-      if (Process ==='2'){
-        var update:any = {
-          field: "update",
-          headerName: "Update",
-          width: 150,
-          renderCell: (params:any) => {
-            return (
-              <>
-                <ModeIcon 
-                  className='updateBtn'
-                  onClick={()=>{
-                    handleUpdate(params.row);
-                    console.log(params);
-                  }}
-                />
-              </>
-            );
-          }
-        }
-        ans.push(update);
-      }
-      else if (Process ==='4'){
-        var del:any = {
-          field: "delete",
-          headerName: "Delete",
-          width: 150,
-          renderCell: (params:any) => {
-            return (
-              <>
-                <DeleteIcon 
-                  className='deleteBtn'
-                  onClick={()=>{
-                    handleDelete(params.row);
-                  }}
-                />
-              </>
-            );
-          }
-        }
-        ans.push(del);
-      }
-      return ans
-    }
-    var Column = Columns(props.Tables[props.TableName].table,props.Process);
-*/

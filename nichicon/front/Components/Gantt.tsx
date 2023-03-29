@@ -1,4 +1,4 @@
-import "./styles.css";
+import "../style.css";
 import ReactGantt, { GanttRow } from "react-gantt";
 import moment from "moment";
 export function testGantt() {
