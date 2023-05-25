@@ -70,13 +70,8 @@ app.post("/", async function (req, res) {
         pr = await code.CodeClassification(req.body);
         res.json(pr);
         break
-      case 6:
-        pr = await code.ChackData(req.body.flg,req.body.ChackData,req.body.tables,req.body.state);
-        res.json(pr);
-        break
-      case 7:
-        pr = await code.ChackData(req.body.flg,req.body.ChackData,req.body.tables);
-        res.json(pr);
+      case 'Calculation':
+        res.json(await code.Calculation(req.body.data,req.body.tables,req.body.state,req.body.step));
         break
       case 8:
         code.SabmitData(req.body);
@@ -97,14 +92,42 @@ app.post("/", async function (req, res) {
         res.json({table:await Struct.StructChack(tables,select),schedule:await Struct.StructArrays(req.body.value,select)});
         break
       case 'WorkDataInit':
-        res.json(await sds.WorkData());
+        res.json(await sds.WorkData(req.body.data));
         break
       case 'WorkDataCalculation':
         pr = await code.CodeClassification(req.body);
+        pr["winding"] = req.body.Product.winding;
         res.json(await sds.WorkDataCulculation(pr,req.body))
         break
       case 'WorkDataBaseCompletion':
-        await sds.WorkDataSetSQL(req.body);
+        res.json(await sds.BaseSubmitSQL(req.body));
+        break
+      case 'WorkDataWindingProcess':
+        res.json(await sds.WindingSabmitData(req.body));
+        break
+      case "CurlingStart":
+        res.json(await sds.CurlingStartSubmit(req.body));
+        break
+      case "CurlingData":
+        res.json(await sds.CurlingDataSubmit(req.body));
+        break
+      case "ExaminationInit":
+        res.json(await psql.PostgreSQLquery(`SELECT * FROM examination WHERE state < 2 or ('${req.body.start}' <= finish and finish <= '${req.body.end}') or finish IS NULL order by id`));
+        break
+      case "ExaminationSet":
+        await sds.ExaminationInit_test(req.body);
+        res.json(true);
+        break
+      case "ExaminationChange":
+        await psql.PostgreSQLquery(`UPDATE examination SET state = ${req.body.data.state},finish=${req.body.data.state===2?"'"+req.body.now+"'":"null"} WHERE id = ${req.body.val.id} and lot_number = '${req.body.val.lot_number}'`);
+        res.json(true);
+        break
+      case 'NewProductionSchedule':
+        data = await code.Calculation(req.body.data,req.body.tables,req.body.state,req.body.step)
+        if(!data.check){
+          await sds.ScheduleSubmit(req.body);
+        }
+        res.json(data)
         break
       case "login":
         pr = await psql.PostgreSQLquery("SELECT * FROM employee_info WHERE code = '"+req.body.user+"' and password = '"+req.body.password+"'");
@@ -124,7 +147,7 @@ app.post("/", async function (req, res) {
       case "UserCodes":
         var SQL = "SELECT code,name,post,affiliations FROM employee_info WHERE "
         var codes = req.body.codes.map((val)=>"code = '"+val+"'")
-        var codes = codes.join(' or ')
+        codes = codes.join(' or ')
         res.json(await psql.PostgreSQLquery(SQL+codes));
         break
       case "FoilStandard":
@@ -142,7 +165,7 @@ app.post("/", async function (req, res) {
         res.json(await code.DisplayCode(req.body));
         break
       case "ProductNumberCheck":
-        res.json(await code.ReadCode(req.body.code,1));
+        res.json(await code.ReadCode(req.body,1));
         break
       case "TubeCheck":
         res.json(await code.TubeCheck(req.body));
